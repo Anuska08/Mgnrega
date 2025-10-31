@@ -266,7 +266,7 @@ export default function App() {
             const fetchData = async () => {
                 try {
                     // Fetch from your backend API (running on port 5000)
-                    const url = process.env.BE_URL || 'http://localhost:5000';
+                    const url = process.env.BE_URL;
                     const response = await fetch(`${url}/api/data/dashboard?district=${selectedDistrict}&period=${selectedPeriod}`);
                     
                     if (!response.ok) {
