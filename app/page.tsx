@@ -228,7 +228,8 @@ export default function App() {
             const fetchData = async () => {
                 try {
                     // Fetch from your backend API (running on port 5000)
-                    const response = await fetch(`http://localhost:5000/api/data/dashboard?district=${selectedDistrict}&period=${selectedPeriod}`);
+                    const url = process.env.BE_URL || 'http://localhost:5000';
+                    const response = await fetch(`${url}/api/data/dashboard?district=${selectedDistrict}&period=${selectedPeriod}`);
                     
                     if (!response.ok) {
                         const errData = await response.json();
