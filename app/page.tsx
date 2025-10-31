@@ -72,7 +72,15 @@ const AppHeader = () => (
 /**
  * Re-usable Stat Card for Key Metrics (NEW UI)
  */
-const StatCard = ({ title, value, icon, change, unit }) => (
+interface StatCardProps {
+    title: string;
+    value: React.ReactNode | number;
+    icon?: React.ReactNode;
+    change?: string;
+    unit?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, change, unit }) => (
     <div className="bg-white p-5 rounded-xl shadow-lg border border-slate-200 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
         <div className="flex items-center space-x-3 mb-2">
             <div className="text-indigo-600">
@@ -100,7 +108,17 @@ const StatCard = ({ title, value, icon, change, unit }) => (
 /**
  * Chart for Monthly Trend
  */
-const MonthlyTrendChart = ({ data }) => (
+type MonthlyTrendDataPoint = {
+    name: string;
+    "Work Days (in Lakhs)": number;
+    [key: string]: any;
+};
+
+type MonthlyTrendChartProps = {
+    data: MonthlyTrendDataPoint[];
+};
+
+const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({ data }) => (
     <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
@@ -126,7 +144,13 @@ const MonthlyTrendChart = ({ data }) => (
 /**
  * Chart for District Comparison
  */
-const DistrictComparisonChart = ({ data }) => (
+type DistrictComparisonDataPoint = {
+    name: string;
+    "Expenditure (Cr)": number;
+    [key: string]: any;
+};
+
+const DistrictComparisonChart: React.FC<{ data: DistrictComparisonDataPoint[] }> = ({ data }) => (
     <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -146,7 +170,7 @@ const DistrictComparisonChart = ({ data }) => (
 /**
  * Chart for Fund Utilization (NEW UI - labels removed)
  */
-const FundBreakdownChart = ({ data }) => (
+const FundBreakdownChart = ({ data }: { data: { name: string; value: number }[] }) => (
     <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -187,7 +211,11 @@ const LoadingSpinner = () => (
 /**
  * Error Message Component
  */
-const ErrorMessage = ({ message }) => (
+type ErrorMessageProps = {
+    message: string;
+};
+
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => (
     <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg" role="alert">
         <p className="font-bold">An Error Occurred</p>
         <p>{message}</p>
@@ -205,13 +233,23 @@ export default function App() {
     const [selectedPeriod, setSelectedPeriod] = useState('current');
 
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     // Data state
-    const [kpiData, setKpiData] = useState(null);
-    const [monthlyData, setMonthlyData] = useState([]);
-    const [comparisonData, setComparisonData] = useState([]);
-    const [fundData, setFundData] = useState([]);
+    type KpiData = {
+        households: number | string;
+        workDays: number | string;
+        funds: number | string;
+        completed: number | string;
+        averageWage: number | string;
+        completionRate: number | string;
+        change?: string;
+    };
+    
+    const [kpiData, setKpiData] = useState<KpiData | null>(null);
+    const [monthlyData, setMonthlyData] = useState<MonthlyTrendDataPoint[]>([]);
+    const [comparisonData, setComparisonData] = useState<DistrictComparisonDataPoint[]>([]);
+    const [fundData, setFundData] = useState<{ name: string; value: number }[]>([]);
 
     const districtsForSelectedState = useMemo(() => {
         return MOCK_DISTRICTS_BY_STATE[selectedState] || [];
@@ -246,7 +284,11 @@ export default function App() {
                     
                 } catch (err) {
                     console.error("Fetch error:", err);
-                    setError(err.message || 'Failed to fetch data. Please try again.');
+                    if (err instanceof Error) {
+                        setError(err.message);
+                    } else {
+                        setError(String(err) || 'Failed to fetch data. Please try again.');
+                    }
                 } finally {
                     setIsLoading(false);
                 }
@@ -257,28 +299,28 @@ export default function App() {
     }, [selectedDistrict, selectedPeriod]); // Re-fetch when district or period changes
 
     // --- Event Handlers ---
-    const handleDistrictChange = (e) => {
-        setSelectedDistrict(e.target.value);
-    };
-
-    const handlePeriodChange = (e) => {
-        setSelectedPeriod(e.target.value);
-    };
+        const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+            setSelectedDistrict(e.target.value);
+        };
     
-    // --- Custom Select Wrapper ---
-    const SelectWrapper = ({ children, ...props }) => (
-        <div className="relative">
-            <select 
-                className="w-full appearance-none bg-white border border-slate-300 rounded-lg py-2.5 px-4 pr-10 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                {...props}
-            >
-                {children}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
-                <ChevronDown className="w-5 h-5" />
+        const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+            setSelectedPeriod(e.target.value);
+        };
+        
+        // --- Custom Select Wrapper ---
+        const SelectWrapper: React.FC<React.PropsWithChildren<React.SelectHTMLAttributes<HTMLSelectElement>>> = ({ children, ...props }) => (
+            <div className="relative">
+                <select 
+                    className="w-full appearance-none bg-white border border-slate-300 rounded-lg py-2.5 px-4 pr-10 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    {...props}
+                >
+                    {children}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                    <ChevronDown className="w-5 h-5" />
+                </div>
             </div>
-        </div>
-    );
+        );
 
 
     return (
